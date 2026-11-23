@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-fox-schema-multi-sql-queries",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Multi-SQL Queries node for n8n powered by FoxSchema (@foxschema/db): execute multiple SQL queries serially (pipeline) or in parallel across one shared credential or different database credentials/dialects per query, with timeouts and flexible output modes.",
 	"keywords": [
 		"n8n-community-node-package",
