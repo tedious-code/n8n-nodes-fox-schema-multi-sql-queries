@@ -74,12 +74,12 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: npm publish --provenance --access public --dry-run
 
-      - name: Publish to npm (using NPM_TOKEN)
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) && secrets.NPM_TOKEN != '' }}
+      - name: Publish to npm
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
-
-      - name: Publish to npm (using OIDC Trusted Publishing)
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) && secrets.NPM_TOKEN == '' }}
-        run: npm publish --provenance --access public
+          NPM_TOKEN_SECRET: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NPM_TOKEN_SECRET" ]; then
+            export NODE_AUTH_TOKEN="$NPM_TOKEN_SECRET"
+          fi
+          npm publish --provenance --access public
