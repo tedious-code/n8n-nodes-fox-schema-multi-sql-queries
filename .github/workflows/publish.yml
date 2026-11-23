@@ -1,13 +1,9 @@
 name: Publish to npm
 
 # Publishes n8n-nodes-fox-schema-multi-sql-queries to npmjs.com with provenance
-# (required by n8n Creator Portal). Supports either:
-#   1. NPM_TOKEN repository secret (useful for initial 0.1.0 publish), OR
-#   2. npm Trusted Publishing (OIDC) once configured on npmjs.com:
-#        Organization or user: tedious-code
-#        Repository:           n8n-nodes-fox-schema-multi-sql-queries
-#        Workflow filename:    publish.yml
-#        Environment name:     npm-publish
+# (required by n8n Creator Portal). Supports:
+#   1. NPM_TOKEN repository secret (including stage-only tokens -> `npm stage publish`)
+#   2. npm Trusted Publishing (OIDC) once configured on npmjs.com
 
 on:
   release:
@@ -44,9 +40,8 @@ jobs:
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
 
-      - name: Upgrade npm (OIDC trusted publishing needs npm >= 11.5.1)
+      - name: Upgrade npm (OIDC & staged publishing need latest npm)
         run: npm install -g npm@latest
 
       - name: Install dependencies
@@ -82,4 +77,16 @@ jobs:
           if [ -n "$NPM_TOKEN_SECRET" ]; then
             export NODE_AUTH_TOKEN="$NPM_TOKEN_SECRET"
           fi
-          npm publish --provenance --access public
+          set +e
+          npm publish --provenance --access public > /tmp/npm-pub.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/npm-pub.log
+          if [ "$rc" -ne 0 ]; then
+            if grep -q "E_STAGE_REQUIRED" /tmp/npm-pub.log; then
+              echo "Token requires staged publishing; running npm stage publish..."
+              npm stage publish --provenance --access public
+            else
+              exit "$rc"
+            fi
+          fi
