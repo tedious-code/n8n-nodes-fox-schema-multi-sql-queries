@@ -1,0 +1,85 @@
+name: Publish to npm
+
+# Publishes n8n-nodes-fox-schema-multi-sql-queries to npmjs.com with provenance
+# (required by n8n Creator Portal). Supports either:
+#   1. NPM_TOKEN repository secret (useful for initial 0.1.0 publish), OR
+#   2. npm Trusted Publishing (OIDC) once configured on npmjs.com:
+#        Organization or user: tedious-code
+#        Repository:           n8n-nodes-fox-schema-multi-sql-queries
+#        Workflow filename:    publish.yml
+#        Environment name:     npm-publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run everything except the final npm publish"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write # Required for OIDC trusted publishing + npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone FoxSchema db + sql build sources
+        run: |
+          git clone --depth 1 https://github.com/tedious-code/foxschema-db.git "$RUNNER_TEMP/foxschema-db"
+          git clone --depth 1 https://github.com/tedious-code/foxschema-sql.git "$RUNNER_TEMP/foxschema-sql"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Upgrade npm (OIDC trusted publishing needs npm >= 11.5.1)
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Link @foxschema/{db,sql} into node_modules
+        run: |
+          mkdir -p node_modules/@foxschema
+          ln -sfn "$RUNNER_TEMP/foxschema-db" node_modules/@foxschema/db
+          ln -sfn "$RUNNER_TEMP/foxschema-sql" node_modules/@foxschema/sql
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Validate n8n package layout
+        run: pnpm validate:n8n
+
+      - name: Scan n8n community package rules
+        run: pnpm scan:n8n
+
+      - name: Publish (dry run)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: npm publish --provenance --access public --dry-run
+
+      - name: Publish to npm (using NPM_TOKEN)
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) && secrets.NPM_TOKEN != '' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
+
+      - name: Publish to npm (using OIDC Trusted Publishing)
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) && secrets.NPM_TOKEN == '' }}
+        run: npm publish --provenance --access public

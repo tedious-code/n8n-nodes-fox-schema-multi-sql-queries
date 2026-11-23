@@ -1,0 +1,90 @@
+{
+	"name": "n8n-nodes-fox-schema-multi-sql-queries",
+	"version": "0.1.0",
+	"description": "Multi-SQL Queries node for n8n powered by FoxSchema (@foxschema/db): execute multiple SQL queries serially (pipeline) or in parallel across one shared credential or different database credentials/dialects per query, with timeouts and flexible output modes.",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n-community-node",
+		"foxschema",
+		"sql",
+		"multi-sql",
+		"multi-queries",
+		"database",
+		"pipeline",
+		"parallel",
+		"postgres",
+		"mysql",
+		"sqlserver",
+		"oracle",
+		"sqlite",
+		"clickhouse",
+		"duckdb",
+		"redshift",
+		"cockroachdb",
+		"tidb",
+		"workflow"
+	],
+	"license": "MIT",
+	"author": {
+		"name": "Huy Phan",
+		"email": "huyplb@live.com"
+	},
+	"homepage": "https://foxschema.com",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/tedious-code/n8n-nodes-fox-schema-multi-sql-queries.git"
+	},
+	"engines": {
+		"node": ">=20 <=24",
+		"pnpm": ">=9.1"
+	},
+	"packageManager": "pnpm@10.23.0",
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"better-sqlite3",
+			"esbuild"
+		]
+	},
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"scripts": {
+		"bundle:foxschema": "node scripts/bundle-foxschema.mjs",
+		"build": "pnpm run bundle:foxschema && tsc && node scripts/copy-assets.mjs",
+		"dev": "tsc --watch",
+		"test": "tsc --noEmit && node --import tsx --test test/*.test.ts",
+		"validate:n8n": "node scripts/validate-n8n-package.mjs",
+		"scan:n8n": "node scripts/scan-n8n-local.mjs",
+		"prepublishOnly": "pnpm run build"
+	},
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/FoxSchemaMultiSqlDbApi.credentials.js",
+			"dist/credentials/FoxSchemaMultiSqlDbVaultApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/FoxSchemaMultiSqlQueries/FoxSchemaMultiSqlQueries.node.js"
+		]
+	},
+	"dependencies": {},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"devDependencies": {
+		"@n8n/scan-community-package": "beta",
+		"@types/node": "^20.11.30",
+		"better-sqlite3": "^13.0.3",
+		"esbuild": "^0.25.0",
+		"n8n-workflow": "^2.0.1",
+		"tsx": "^4.23.1",
+		"typescript": "^5.4.5"
+	}
+}

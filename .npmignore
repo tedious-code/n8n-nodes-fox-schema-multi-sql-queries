@@ -1,0 +1,7 @@
+nodes/
+credentials/
+scripts/
+test/
+tsconfig.json
+*.tsbuildinfo
+.tmp-scan-*/

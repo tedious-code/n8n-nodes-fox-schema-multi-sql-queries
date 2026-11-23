@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20", "22"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone FoxSchema db + sql build sources
+        run: |
+          git clone --depth 1 https://github.com/tedious-code/foxschema-db.git "$RUNNER_TEMP/foxschema-db"
+          git clone --depth 1 https://github.com/tedious-code/foxschema-sql.git "$RUNNER_TEMP/foxschema-sql"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Link @foxschema/{db,sql} into node_modules
+        run: |
+          mkdir -p node_modules/@foxschema
+          ln -sfn "$RUNNER_TEMP/foxschema-db" node_modules/@foxschema/db
+          ln -sfn "$RUNNER_TEMP/foxschema-sql" node_modules/@foxschema/sql
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Validate n8n package layout
+        run: pnpm validate:n8n
+
+      - name: Scan n8n community package rules
+        run: pnpm scan:n8n
